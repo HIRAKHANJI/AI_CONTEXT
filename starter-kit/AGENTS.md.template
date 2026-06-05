@@ -1,0 +1,40 @@
+# AGENTS.md — <PROJECT NAME>
+
+> A cross-tool instruction file that many AI agents read natively (Claude Code,
+> GitHub Copilot, Codex, Cursor, Gemini CLI, Aider, …). This is your *single source of
+> truth* when more than one AI works on the project — the modern version of the shared
+> `.md` context you already maintain.
+>
+> Strategy: keep the real content here in `AGENTS.md`. Point `CLAUDE.md` at it so you
+> only maintain ONE file. On Windows the simplest is to keep `CLAUDE.md` as a one-liner:
+>
+> ```
+> See AGENTS.md for all project rules and context.
+> ```
+> (or copy the content into both; or use a directory junction.)
+
+## Project
+- What it is, who it's for, current stage.
+
+## Setup
+```
+# install / run / test / lint commands here
+```
+
+## Rules every agent must follow
+- Plan before large changes; keep diffs small and reviewable.
+- Never commit secrets; never weaken security to "make it work."
+- Match existing code style and patterns; run the formatter/linter.
+- Add/keep tests for the critical path.
+- Update docs for any user-facing change.
+
+## Boundaries
+- Do not edit: <generated code / migrations / vendored deps>.
+- Ask before: schema changes, dependency additions, public API changes.
+
+## Where things live
+- Architecture: <link / Mermaid diagram>
+- Key dirs: src/, tests/, docs/
+
+## Glossary / domain notes
+- Define any project-specific terms an agent would otherwise misread.

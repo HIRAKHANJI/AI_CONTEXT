@@ -1,0 +1,52 @@
+# CLAUDE.md — <PROJECT NAME>
+
+> Claude Code auto-loads this file every session. It's the project's permanent
+> rulebook. Keep it short, true, and current. Rename this file to `CLAUDE.md`.
+> (Tip: run `/init` to auto-generate a first draft, then refine with the below.)
+
+## What this project is
+- One-paragraph description: what it does and who it's for.
+- Status / stage: <Demo | Prototype | MVP | Production> (see docs/WORKFLOW.md).
+
+## Stack & key tools
+- Language(s) / framework(s):
+- Package manager:
+- Database:
+- Notable libraries (and why):
+
+## How to run / build / test
+```
+# install
+# run dev
+# run tests
+# lint / format
+```
+
+## Conventions (do this)
+- Code style: (e.g. Ruff for Python; Prettier/ESLint for JS)
+- Commit style: (e.g. Conventional Commits)
+- Tests: write/keep tests for the critical path; target coverage >= 80%.
+- Diagrams: author as Mermaid in the docs so they stay in version control.
+
+## Guardrails (do NOT do this)
+- Never commit secrets — they belong in env/secret manager, never in git.
+- Don't add a dependency without checking license + a vuln scan (OSV/pip-audit).
+- Don't touch <generated dirs / vendored code / migrations> by hand.
+- Ask before large refactors or schema changes.
+
+## Architecture (the map)
+- High-level: <link to docs/architecture.md or a Mermaid diagram>
+- Key directories:
+  - `src/` —
+  - `tests/` —
+
+## Definition of done (this project)
+- [ ] Tests pass + coverage held
+- [ ] `/security-review` and `/code-review` run on the branch
+- [ ] No secrets in the diff (secret scanner clean)
+- [ ] Docs/README updated for any user-facing change
+
+## Context for the AI
+- Preferred approach: plan first (Plan Mode) for non-trivial changes.
+- When unsure about product intent, ask rather than guess.
+- Keep changes small and reviewable.
