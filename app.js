@@ -16,8 +16,24 @@
   };
   var COST_VAR = { "Free": "var(--c-free)", "Free tier": "var(--c-freetier)", "Paid": "var(--c-paid)" };
 
+  // ---- "how it connects to Claude" facet, derived from type (+ a few overrides) ----
+  var LINK_BY_TYPE = {
+    "MCP server": "mcp", "Connector": "connector", "Agent Skill": "native",
+    "Claude Code Plugin": "native", "Subagent": "native", "Concept": "native",
+    "CLI tool": "cli", "Hook": "cli", "Web service": "standalone"
+  };
+  var LINK_OVERRIDE = { "awesome-claude-code": "standalone", "mermaid": "cli", "plantuml": "cli", "obsidian-kanban": "standalone" };
+  var LINK_META = {
+    mcp:        { label: "MCP",               where: "Claude Code & Desktop — add with `claude mcp add`" },
+    connector:  { label: "Connector · Settings", where: "Claude apps → Settings → Connectors" },
+    native:     { label: "Skill / built-in",  where: "Claude Code (skills also work in Claude apps & API)" },
+    cli:        { label: "CLI",               where: "Your terminal — Claude runs it for you" },
+    standalone: { label: "Standalone",        where: "Your browser/desktop — you operate it directly" }
+  };
+  function linkOf(it) { return LINK_OVERRIDE[it.id] || LINK_BY_TYPE[it.type] || "standalone"; }
+
   // ---- state ----
-  var state = { search: "", aisle: "all", tier: "all", type: "all", freeOnly: false, group: true };
+  var state = { search: "", aisle: "all", link: "all", tier: "all", cost: "all", sort: "tier" };
   var cart = loadCart();
 
   // ---- helpers ----
@@ -30,26 +46,38 @@
   function loadCart() { try { return JSON.parse(localStorage.getItem("aic_cart") || "[]"); } catch (e) { return []; } }
   function saveCart() { try { localStorage.setItem("aic_cart", JSON.stringify(cart)); } catch (e) {} }
   function inAisle(it, id) { return it.aisle === id || (it.also && it.also.indexOf(id) !== -1); }
+  function rank(it) { return it.popRank || 0; }
 
   function matches(it) {
     if (state.aisle !== "all" && !inAisle(it, state.aisle)) return false;
+    if (state.link !== "all" && linkOf(it) !== state.link) return false;
     if (state.tier !== "all" && it.tier !== state.tier) return false;
-    if (state.type !== "all" && it.type !== state.type) return false;
-    if (state.freeOnly && it.cost !== "Free") return false;
+    if (state.cost !== "all" && it.cost !== state.cost) return false;
     if (state.search) {
       var q = state.search.toLowerCase();
       var hay = (it.name + " " + it.what + " " + it.why + " " + it.type + " " + it.aisle + " " +
-                 (it.also || []).join(" ") + " " + it.tier + " " + it.cost).toLowerCase();
+                 (it.also || []).join(" ") + " " + it.tier + " " + it.cost + " " + (it.pop || "")).toLowerCase();
       if (hay.indexOf(q) === -1) return false;
     }
     return true;
   }
 
+  // ---- sorting ----
+  function tierSort(a, b) {
+    var d = (TIER_ORDER[a.tier] || 9) - (TIER_ORDER[b.tier] || 9);
+    if (d) return d;
+    var r = rank(b) - rank(a);
+    if (r) return r;
+    return a.name.localeCompare(b.name);
+  }
+  function popSort(a, b) { var r = rank(b) - rank(a); return r ? r : a.name.localeCompare(b.name); }
+  function nameSort(a, b) { return a.name.localeCompare(b.name); }
+  function sorter() { return state.sort === "pop" ? popSort : state.sort === "name" ? nameSort : tierSort; }
+
   // ---- build static UI ----
   function buildAisleChips() {
     var wrap = document.getElementById("aisleChips");
-    var total = ITEMS.length;
-    var chips = ['<div class="chip active" data-aisle="all">🛒 All <span class="n">' + total + "</span></div>"];
+    var chips = ['<div class="chip active" data-aisle="all">🛒 All <span class="n">' + ITEMS.length + "</span></div>"];
     AISLES.forEach(function (a) {
       var n = ITEMS.filter(function (it) { return inAisle(it, a.id); }).length;
       if (!n) return;
@@ -67,22 +95,10 @@
     });
   }
 
-  function buildTypeSelect() {
-    var sel = document.getElementById("typeSel");
-    var types = {};
-    ITEMS.forEach(function (it) { types[it.type] = (types[it.type] || 0) + 1; });
-    var opts = ['<option value="all">All types</option>'];
-    Object.keys(types).sort().forEach(function (t) {
-      opts.push('<option value="' + esc(t) + '">' + esc(t) + " (" + types[t] + ")</option>");
-    });
-    sel.innerHTML = opts.join("");
-    sel.addEventListener("change", function () { state.type = sel.value; render(); });
-  }
-
   function buildStats() {
     var free = ITEMS.filter(function (it) { return it.cost === "Free"; }).length;
     var core = ITEMS.filter(function (it) { return it.tier === "Core"; }).length;
-    var mcp = ITEMS.filter(function (it) { return it.type === "MCP server"; }).length;
+    var mcp = ITEMS.filter(function (it) { return linkOf(it) === "mcp"; }).length;
     document.getElementById("stats").innerHTML =
       '<div class="stat"><b>' + ITEMS.length + "</b>vetted items</div>" +
       '<div class="stat"><b>' + free + "</b>fully free</div>" +
@@ -94,6 +110,7 @@
   // ---- card ----
   function card(it) {
     var inCart = cart.indexOf(it.id) !== -1;
+    var lk = linkOf(it), lkMeta = LINK_META[lk];
     var c = el(
       '<article class="card" style="--tier-color:' + TIER_VAR[it.tier] + '">' +
         '<div class="row">' +
@@ -106,14 +123,19 @@
           "</div>" +
           '<span class="badge aisle" data-go="' + esc(it.aisle) + '">' + (aisleById[it.aisle] ? aisleById[it.aisle].icon : "") + " " + esc(aisleById[it.aisle] ? aisleById[it.aisle].name : it.aisle) + "</span>" +
         "</div>" +
-        '<div class="badges"><span class="badge type">' + esc(it.type) + "</span>" +
-          (it.costNote ? '<span class="badge type" title="cost note">ⓘ ' + esc(it.costNote) + "</span>" : "") + "</div>" +
+        '<div class="badges">' +
+          '<span class="badge link' + (lk === "connector" ? " connector" : "") + '" title="' + esc(lkMeta.where) + '">🔌 ' + esc(lkMeta.label) + "</span>" +
+          '<span class="badge type">' + esc(it.type) + "</span>" +
+          (it.costNote ? '<span class="badge type" title="cost note">ⓘ ' + esc(it.costNote) + "</span>" : "") +
+        "</div>" +
+        (it.pop ? '<div class="pop">' + popHtml(it.pop) + "</div>" : "") +
         '<div class="what">' + esc(it.what) + "</div>" +
-        '<div class="maturity">📈 ' + esc(it.maturity) + "</div>" +
         '<button class="details-toggle">Details ▾</button>' +
         '<div class="details">' +
           '<div><div class="lbl">Why it fits you</div><div class="why">' + esc(it.why) + "</div></div>" +
+          '<div><div class="lbl">How you use it with Claude</div><div class="why">' + esc(lkMeta.where) + "</div></div>" +
           '<div><div class="lbl">Install</div><div class="install"><code>' + esc(it.install) + '</code><button class="copy-btn" data-copy="install">Copy</button></div></div>' +
+          '<div><div class="lbl">Maturity / adoption</div><div class="why">' + esc(it.maturity) + "</div></div>" +
           '<div><div class="lbl">Heads-up / risk</div><div class="risk">' + esc(it.risk) + "</div></div>" +
           '<div><div class="lbl">Verdict</div><div class="why">' + esc(it.verdict) + "</div></div>" +
         "</div>" +
@@ -130,11 +152,7 @@
       this.textContent = open ? "Details ▴" : "Details ▾";
     });
     c.querySelector(".badge.aisle").addEventListener("click", function () {
-      var id = this.getAttribute("data-go");
-      state.aisle = id;
-      var chips = document.querySelectorAll("#aisleChips .chip");
-      chips.forEach(function (x) { x.classList.toggle("active", x.getAttribute("data-aisle") === id); });
-      render();
+      setAisle(this.getAttribute("data-go"));
       window.scrollTo({ top: document.querySelector(".filters").offsetTop - 70, behavior: "smooth" });
     });
     c.querySelector('[data-copy="install"]').addEventListener("click", function () {
@@ -144,33 +162,44 @@
     return c;
   }
 
+  // pop string like "⭐57k · Massive · loved" — star highlighted, ⚠ flagged
+  function popHtml(s) {
+    return esc(s)
+      .replace(/⭐/g, '<span class="star">⭐</span>')
+      .replace(/⚠/g, '<span class="flag">⚠</span>');
+  }
+
+  function setAisle(id) {
+    state.aisle = id;
+    document.querySelectorAll("#aisleChips .chip").forEach(function (x) {
+      x.classList.toggle("active", x.getAttribute("data-aisle") === id);
+    });
+    render();
+  }
+
   // ---- render grid ----
   function render() {
     var grid = document.getElementById("grid");
     grid.innerHTML = "";
     var list = ITEMS.filter(matches);
+    document.getElementById("resultCount").textContent = list.length + " of " + ITEMS.length + " items";
 
     if (!list.length) {
-      grid.innerHTML = '<div class="empty">🤷 No tools match these filters.<br/>Try clearing the search or picking “All”.</div>';
+      grid.innerHTML = '<div class="empty">🤷 No tools match these filters.<br/>Try Reset or pick “All”.</div>';
       return;
     }
 
-    if (state.group && state.aisle === "all" && !state.search) {
+    var grouped = state.sort === "tier" && state.aisle === "all" && !state.search;
+    if (grouped) {
       AISLES.forEach(function (a) {
-        var inThis = list.filter(function (it) { return it.aisle === a.id; })
-                         .sort(tierSort);
+        var inThis = list.filter(function (it) { return it.aisle === a.id; }).sort(tierSort);
         if (!inThis.length) return;
-        var head = el('<div class="aisle-head"><h2>' + a.icon + " " + esc(a.name) + '</h2><span class="blurb">' + esc(a.blurb) + "</span></div>");
-        grid.appendChild(head);
+        grid.appendChild(el('<div class="aisle-head"><h2>' + a.icon + " " + esc(a.name) + '</h2><span class="blurb">' + esc(a.blurb) + "</span></div>"));
         inThis.forEach(function (it) { grid.appendChild(card(it)); });
       });
     } else {
-      list.sort(tierSort).forEach(function (it) { grid.appendChild(card(it)); });
+      list.sort(sorter()).forEach(function (it) { grid.appendChild(card(it)); });
     }
-  }
-  function tierSort(a, b) {
-    var d = (TIER_ORDER[a.tier] || 9) - (TIER_ORDER[b.tier] || 9);
-    return d !== 0 ? d : a.name.localeCompare(b.name);
   }
 
   // ---- cart ----
@@ -193,17 +222,13 @@
     ordered.forEach(function (it) {
       html += '<div class="cart-item"><div class="meta"><div class="nm">' +
         (aisleById[it.aisle] ? aisleById[it.aisle].icon + " " : "") + esc(it.name) +
-        '  ·  <span style="color:var(--muted-2);font-weight:600;font-size:12px">' + esc(it.tier) + " · " + esc(it.cost) + "</span></div>" +
+        '  ·  <span style="color:var(--muted-2);font-weight:600;font-size:12px">' + esc(it.tier) + " · " + esc(LINK_META[linkOf(it)].label) + "</span></div>" +
         "<code>" + esc(it.install) + "</code></div>" +
         '<button class="rm" data-rm="' + it.id + '" title="Remove">&times;</button></div>';
     });
     body.innerHTML = html;
     body.querySelectorAll("[data-rm]").forEach(function (b) {
-      b.addEventListener("click", function () {
-        toggleCart(b.getAttribute("data-rm"));
-        // also refresh any matching add button on the grid
-        render();
-      });
+      b.addEventListener("click", function () { toggleCart(b.getAttribute("data-rm")); render(); });
     });
   }
 
@@ -231,7 +256,7 @@
         lines.push("", "## " + (a ? a.icon + " " + a.name : it.aisle));
         lastAisle = it.aisle;
       }
-      lines.push("- [ ] **" + it.name + "** — " + it.tier + " · " + it.cost);
+      lines.push("- [ ] **" + it.name + "** — " + it.tier + " · " + it.cost + " · " + LINK_META[linkOf(it)].label);
       lines.push("      install: " + it.install);
       lines.push("      docs:    " + it.url);
     });
@@ -240,9 +265,8 @@
 
   // ---- clipboard + toast ----
   function copy(text) {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).catch(fallback);
-    } else { fallback(); }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(fallback);
+    else fallback();
     function fallback() {
       var ta = document.createElement("textarea");
       ta.value = text; document.body.appendChild(ta); ta.select();
@@ -258,25 +282,33 @@
     toastT = setTimeout(function () { t.classList.remove("show"); }, 1600);
   }
 
-  // ---- drawer + modal wiring ----
+  // ---- drawer + modal ----
   function openCart() { document.getElementById("drawer").classList.add("open"); document.getElementById("scrim").classList.add("open"); renderCart(); }
   function closeCart() { document.getElementById("drawer").classList.remove("open"); document.getElementById("scrim").classList.remove("open"); }
+
+  function resetFilters() {
+    state.search = ""; state.aisle = "all"; state.link = "all"; state.tier = "all"; state.cost = "all"; state.sort = "tier";
+    document.getElementById("search").value = "";
+    document.getElementById("linkSel").value = "all";
+    document.getElementById("tierSel").value = "all";
+    document.getElementById("costSel").value = "all";
+    document.getElementById("sortSel").value = "tier";
+    setAisle("all");
+  }
 
   function init() {
     document.getElementById("heroTag").textContent = DATA.meta.tagline || document.getElementById("heroTag").textContent;
     document.getElementById("updated").textContent = DATA.meta.updated || "";
-    buildStats(); buildAisleChips(); buildTypeSelect(); updateCartCount(); render();
+    buildStats(); buildAisleChips(); updateCartCount(); render();
 
     document.getElementById("search").addEventListener("input", function (e) { state.search = e.target.value.trim(); render(); });
-    document.getElementById("freeOnly").addEventListener("change", function (e) { state.freeOnly = e.target.checked; render(); });
-    document.getElementById("groupAisle").addEventListener("change", function (e) { state.group = e.target.checked; render(); });
-
-    var tierSeg = document.getElementById("tierSeg");
-    tierSeg.querySelectorAll("button").forEach(function (b) {
-      b.addEventListener("click", function () {
-        tierSeg.querySelectorAll("button").forEach(function (x) { x.classList.remove("active"); });
-        b.classList.add("active"); state.tier = b.getAttribute("data-tier"); render();
-      });
+    document.getElementById("linkSel").addEventListener("change", function (e) { state.link = e.target.value; render(); });
+    document.getElementById("tierSel").addEventListener("change", function (e) { state.tier = e.target.value; render(); });
+    document.getElementById("costSel").addEventListener("change", function (e) { state.cost = e.target.value; render(); });
+    document.getElementById("sortSel").addEventListener("change", function (e) { state.sort = e.target.value; render(); });
+    document.getElementById("resetBtn").addEventListener("click", resetFilters);
+    document.getElementById("legendToggle").addEventListener("click", function () {
+      document.getElementById("legend").classList.toggle("open");
     });
 
     document.getElementById("cartBtn").addEventListener("click", openCart);

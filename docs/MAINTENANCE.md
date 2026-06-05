@@ -66,6 +66,17 @@ the Protocol decides.
 
 | Date | Item | Decision | Reason |
 |------|------|----------|--------|
+| 2026-06-05 | **Catalog v1.1 re-vet** | Adoption verified per item | Stars/downloads/sentiment fact-checked across all items; popularity blurbs added to the site; 76 items remain. |
+| 2026-06-05 | Ruflo (ex claude-flow) | ❌ REMOVED | High stars but an independent audit (Issue #1514) found ~99% of its MCP tools are non-functional stubs and token *overhead*, not savings. Hype ≠ working product. |
+| 2026-06-05 | claude-mermaid MCP | ❌ REMOVED | ~155★, no releases, redundant — Claude writes Mermaid natively; use Mermaid Live Editor to render. |
+| 2026-06-05 | accessible-color-contrast CLI | ❌ REMOVED | Brand-new, no adoption signals, better-adopted alternatives exist. axe-core + Lighthouse already cover contrast. |
+| 2026-06-05 | **TruffleHog** | ⬆️ PROMOTED to Core | ⭐26k, actively maintained, verifies live secrets — the most proven secret scanner. |
+| 2026-06-05 | **Betterleaks** | ⬇️ DEMOTED to Shortlist | Only months old (~1.1k★). Promising successor, but unproven — hype-tax rule R3. |
+| 2026-06-05 | eslint-plugin-security | ⬇️ DEMOTED to Situational | Credibly criticized for thin coverage (~13 rules, misses most modern JS vulns). Baseline layer only; pair with Semgrep. |
+| 2026-06-05 | Obsidian Kanban plugin | ⬇️ DEMOTED to Shortlist | No release in 12+ months; maintainer is seeking help. Fails Gate G2 today, but boards are plain markdown (low lock-in). |
+| 2026-06-05 | Obsidian MCP (cyanheads) | ⬇️ DEMOTED to Situational | ~577★, niche; was stale late-2025 then revived. Still the best Obsidian MCP — scope to specific folders. |
+| 2026-06-05 | Semgrep CE | ℹ️ Caveat added | CE lacks cross-file taint analysis (Pro/OpenGrep) — noted on the card so expectations are set. |
+| 2026-06-05 | Tailwind / Ruff | ℹ️ Watch note added | 2026 ownership/funding changes (Tailwind Labs cuts; Astral acquisition) — no problem today, flagged to re-check. |
 | 2026-06-05 | **Initial stock** | Catalog v1.0 created | First curation across all 14 departments — see `catalog/catalog.md`. |
 | 2026-06-05 | Official SQLite & Postgres reference MCP servers | ❌ REJECTED | Archived to `servers-archived` with known SQL-injection issues. Replaced by **Bytebase DBHub**. |
 | 2026-06-05 | `modelcontextprotocol` reference GitHub server | ❌ REJECTED | Archived. Replaced by official **github/github-mcp-server**. |
