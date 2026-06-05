@@ -36,26 +36,40 @@
   <main class="container">
     <div class="filters">
       <div class="chips" id="aisleChips"></div>
-      <div class="subfilters">
-        <div class="group">
-          <label class="lbl">Tier</label>
-          <div class="seg" id="tierSeg">
-            <button data-tier="all" class="active">All</button>
-            <button data-tier="Core">Core</button>
-            <button data-tier="Recommended">Rec.</button>
-            <button data-tier="Situational">Situational</button>
-            <button data-tier="Shortlist">Shortlist</button>
-            <button data-tier="Showroom">Showroom</button>
-          </div>
-        </div>
-        <div class="group">
-          <label class="lbl">Type</label>
-          <select id="typeSel" class="btn ghost" style="padding:7px 10px;"></select>
-        </div>
-        <label class="toggle"><input type="checkbox" id="freeOnly" /> Free only (no paid tiers)</label>
-        <label class="toggle"><input type="checkbox" id="groupAisle" checked /> Group by aisle</label>
+      <div class="toolbar">
+        <span class="select"><select id="linkSel" aria-label="Works with Claude via">
+          <option value="all">Works with: All</option>
+          <option value="mcp">MCP servers</option>
+          <option value="connector">Connectors (Claude Settings)</option>
+          <option value="native">Skills &amp; built-ins</option>
+          <option value="cli">CLI tools (Claude runs)</option>
+          <option value="standalone">Standalone (you use)</option>
+        </select></span>
+        <span class="select"><select id="tierSel" aria-label="Tier">
+          <option value="all">Tier: All</option>
+          <option value="Core">Core</option>
+          <option value="Recommended">Recommended</option>
+          <option value="Situational">Situational</option>
+          <option value="Shortlist">Shortlist</option>
+          <option value="Showroom">Showroom</option>
+        </select></span>
+        <span class="select"><select id="costSel" aria-label="Cost">
+          <option value="all">Cost: All</option>
+          <option value="Free">Free</option>
+          <option value="Free tier">Free tier</option>
+          <option value="Paid">Paid</option>
+        </select></span>
+        <span class="select"><select id="sortSel" aria-label="Sort by">
+          <option value="tier">Sort: Recommended</option>
+          <option value="pop">Most popular</option>
+          <option value="name">A–Z</option>
+        </select></span>
+        <span class="spacer"></span>
+        <span class="result-count" id="resultCount"></span>
+        <button class="reset" id="resetBtn">Reset</button>
       </div>
-      <div class="legend">
+      <button class="legend-toggle" id="legendToggle">ⓘ What do the tiers mean?</button>
+      <div class="legend" id="legend">
         <span><span class="dot" style="background:var(--t-core)"></span>Core — install first</span>
         <span><span class="dot" style="background:var(--t-recommended)"></span>Recommended</span>
         <span><span class="dot" style="background:var(--t-situational)"></span>Situational</span>
