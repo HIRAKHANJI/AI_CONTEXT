@@ -1,0 +1,31 @@
+{
+  "_comment": "AI_CONTEXT example hooks. Merge the 'hooks' block into your .claude/settings.json (project) or ~/.claude/settings.json (global). These are EXAMPLES — adjust commands to your stack. Prefer the /hooks command or the update-config skill to edit safely.",
+  "_patterns": {
+    "auto-format": "PostToolUse on Edit/Write keeps code tidy automatically.",
+    "secret-guard": "Add a Stop or PreToolUse hook that runs your secret scanner (betterleaks/gitleaks) and fails if it finds something.",
+    "env-guard": "A PreToolUse hook can inspect the tool input and block edits to .env / secrets by exiting non-zero. See https://code.claude.com/docs/en/hooks"
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ruff format . 2> NUL"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo [project] Loaded. Plan first for non-trivial changes; run /security-review before shipping."
+          }
+        ]
+      }
+    ]
+  }
+}

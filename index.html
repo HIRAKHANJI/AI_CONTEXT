@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI_CONTEXT — Claude tooling shopping center</title>
+  <meta name="description" content="A curated, protocol-vetted shopping center of free, battle-tested tools, MCP servers, skills and connectors to hook into Claude Code and the rest of Claude." />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛒</text></svg>" />
+</head>
+<body>
+  <!-- ===================== TOP BAR ===================== -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">🛒</span>
+      <span>AI_CONTEXT<small>your Claude tooling shopping center</small></span>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn ghost" id="protocolBtn" title="The rules for what gets stocked">📜 Protocol</button>
+      <button class="btn primary" id="cartBtn">🛒 Cart <span class="cart-count" id="cartCount">0</span></button>
+    </div>
+  </header>
+
+  <!-- ===================== HERO ===================== -->
+  <section class="hero">
+    <h1>Stop falling behind. Start shopping.</h1>
+    <p class="tag" id="heroTag">A curated, protocol-vetted aisle of free, battle-tested tools you can hook into Claude Code first — then everywhere else Claude lives. No shiny-object syndrome. No surprise subscriptions.</p>
+    <div class="search-wrap">
+      <span class="icon">🔎</span>
+      <input id="search" type="search" placeholder="Search tools, e.g. 'browser', 'secrets', 'diagram', 'poster'…" autocomplete="off" />
+    </div>
+    <div class="stats" id="stats"></div>
+  </section>
+
+  <!-- ===================== FILTERS + GRID ===================== -->
+  <main class="container">
+    <div class="filters">
+      <div class="chips" id="aisleChips"></div>
+      <div class="subfilters">
+        <div class="group">
+          <label class="lbl">Tier</label>
+          <div class="seg" id="tierSeg">
+            <button data-tier="all" class="active">All</button>
+            <button data-tier="Core">Core</button>
+            <button data-tier="Recommended">Rec.</button>
+            <button data-tier="Situational">Situational</button>
+            <button data-tier="Shortlist">Shortlist</button>
+            <button data-tier="Showroom">Showroom</button>
+          </div>
+        </div>
+        <div class="group">
+          <label class="lbl">Type</label>
+          <select id="typeSel" class="btn ghost" style="padding:7px 10px;"></select>
+        </div>
+        <label class="toggle"><input type="checkbox" id="freeOnly" /> Free only (no paid tiers)</label>
+        <label class="toggle"><input type="checkbox" id="groupAisle" checked /> Group by aisle</label>
+      </div>
+      <div class="legend">
+        <span><span class="dot" style="background:var(--t-core)"></span>Core — install first</span>
+        <span><span class="dot" style="background:var(--t-recommended)"></span>Recommended</span>
+        <span><span class="dot" style="background:var(--t-situational)"></span>Situational</span>
+        <span><span class="dot" style="background:var(--t-shortlist)"></span>Shortlist — watch</span>
+        <span><span class="dot" style="background:var(--t-showroom)"></span>Showroom — paid / not stocked</span>
+      </div>
+    </div>
+
+    <div class="grid" id="grid"></div>
+  </main>
+
+  <!-- ===================== CART DRAWER ===================== -->
+  <div class="scrim" id="scrim"></div>
+  <aside class="drawer" id="drawer" aria-label="Your install cart">
+    <header>
+      <h2>🛒 Your install list</h2>
+      <button class="x" id="closeCart">&times;</button>
+    </header>
+    <div class="body" id="cartBody">
+      <p class="cart-hint">Add tools from the aisles and they collect here as a personal, ordered setup checklist. Then copy it as Markdown (or paste it straight back to Claude Code and say “install these”).</p>
+    </div>
+    <div class="foot">
+      <button class="btn primary" id="exportBtn">📋 Copy as install checklist</button>
+      <button class="btn ghost" id="clearCart">Clear cart</button>
+      <textarea class="export" id="exportArea" style="display:none" readonly></textarea>
+    </div>
+  </aside>
+
+  <!-- ===================== PROTOCOL MODAL ===================== -->
+  <div class="modal-scrim" id="protocolModal">
+    <div class="modal">
+      <header>
+        <h2>📜 The Admission Protocol</h2>
+        <button class="x" id="closeProtocol">&times;</button>
+      </header>
+      <div class="content">
+        <p style="color:var(--muted);margin-top:0">Nothing gets stocked unless it passes <b>all five gates</b>. The default answer is <b>reject</b> — things earn their way in. This is how we beat shiny-object syndrome.</p>
+        <div class="gate"><span class="g">G1</span><div><b>💸 Free</b><p>Free forever for a solo dev (a genuinely usable, non-expiring free tier counts). Paid-only → Showroom.</p></div></div>
+        <div class="gate"><span class="g">G2</span><div><b>🛠️ Maintained</b><p>Active in the last ~12 months, versioned, not an abandoned experiment.</p></div></div>
+        <div class="gate"><span class="g">G3</span><div><b>🛡️ Safe</b><p>Open-source or trusted vendor; you can see what data/permissions it touches; no history of malice.</p></div></div>
+        <div class="gate"><span class="g">G4</span><div><b>🎯 Real job</b><p>Solves a concrete need in one of the 14 departments — not just “neat.”</p></div></div>
+        <div class="gate"><span class="g">G5</span><div><b>🪟 Fits you</b><p>Works on Windows + Claude Code with reasonable setup and low babysitting.</p></div></div>
+        <p style="color:var(--muted)">Then it's scored (value · maturity · setup ease · fit), an overlap penalty is applied (one job, one tool), and it lands in a tier. Full rules, scoring rubric and decision flowchart live in <a href="docs/PROTOCOL.md">docs/PROTOCOL.md</a>.</p>
+        <p style="color:var(--muted)">New here? Read the plain-English <a href="docs/GLOSSARY.md">glossary</a> (“what even is an MCP?”), then the <a href="docs/INSTALL-ON-WINDOWS.md">Windows install guide</a>.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== FOOTER ===================== -->
+  <footer class="site">
+    <div class="footwrap">
+      <div class="col">
+        <h4>Start here</h4>
+        <a href="docs/GLOSSARY.md">📖 Glossary — what is an MCP?</a>
+        <a href="docs/PROTOCOL.md">📜 The Admission Protocol</a>
+        <a href="docs/INSTALL-ON-WINDOWS.md">🪟 Install on Windows</a>
+        <a href="README.md">🏠 Repo overview</a>
+      </div>
+      <div class="col">
+        <h4>Guides</h4>
+        <a href="docs/WORKFLOW.md">🧭 Idea → Production workflow</a>
+        <a href="docs/COMPLIANCE.md">📜 SOC 2 / ISO 27001 guide</a>
+        <a href="docs/MAINTENANCE.md">🔄 Restock ritual</a>
+        <a href="docs/GITHUB-PAGES.md">🌐 Host this site</a>
+      </div>
+      <div class="col">
+        <h4>Kit</h4>
+        <a href="starter-kit/">🧰 Starter kit (configs + skills)</a>
+        <a href="catalog/catalog.md">🗂️ Full catalog (markdown)</a>
+        <a href="https://github.com/HIRAKHANJI/AI_CONTEXT">🐙 This repo on GitHub</a>
+      </div>
+      <div class="col">
+        <h4>About</h4>
+        <p class="footnote">Curated for a solo, AI-reliant Windows dev. Free &amp; battle-tested only. Updated <span id="updated"></span>. This is a living shop — re-vet quarterly.</p>
+      </div>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

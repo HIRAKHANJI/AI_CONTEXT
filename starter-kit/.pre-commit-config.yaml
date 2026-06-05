@@ -1,0 +1,41 @@
+# AI_CONTEXT starter — free security + quality gate that runs on every `git commit`.
+# Setup (once per repo):
+#   pip install pre-commit
+#   pre-commit install
+#   pre-commit autoupdate     # bumps the `rev:` pins below to the latest releases
+#
+# This wires several cart tools together (Protocol-approved, all free):
+#   - basic hygiene + private-key detection
+#   - Ruff (lint + format, Python)
+#   - Bandit (Python SAST)
+#   - gitleaks (secret scanning)   # swap for betterleaks as it matures
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-merge-conflict
+      - id: check-added-large-files
+      - id: detect-private-key
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.4
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.8.0
+    hooks:
+      - id: bandit
+        args: ["-q", "-r", "src"]
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.21.2
+    hooks:
+      - id: gitleaks
+
+# JS/Node project? Add eslint-plugin-security to your ESLint config and run it here too.
+# Lockfile vulns? Add OSV-Scanner / pip-audit as a local hook or a CI step.
